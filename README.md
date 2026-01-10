@@ -1,6 +1,6 @@
 # AI-ML-Projects
-This repository is used to capture the articles and code related to the AI &amp; ML projects
-This repository contains a collection of AI/ML projects that I’ve been working on as part of my learning journey and professional development in Artificial Intelligence, Machine Learning, and Data Engineering.
+A curated portfolio of Artificial Intelligence (AI) and Machine Learning (ML) projects showcasing hands-on implementation across ML, Deep Learning, NLP, Computer Vision, and Data Engineering + AI integrations.
+This repository is built to demonstrate practical problem-solving, structured experimentation, and end-to-end ML workflows — from data preparation → modeling → evaluation → insights.
 
 The projects are focused on solving real-world problems using modern ML techniques and cover the complete workflow — from data preprocessing and feature engineering to model training, evaluation, and deployment.
 
