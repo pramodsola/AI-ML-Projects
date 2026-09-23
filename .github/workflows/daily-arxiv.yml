@@ -1,0 +1,79 @@
+name: Daily arXiv digest
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # 7:00 AM UTC every day
+  workflow_dispatch:        # allow manual run from Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch and write arXiv digest
+        run: |
+          mkdir -p arxiv-daily
+          python - <<'EOF'
+          import urllib.request, xml.etree.ElementTree as ET, os
+          from datetime import datetime
+
+          url = (
+            "https://export.arxiv.org/api/query"
+            "?search_query=cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.CV"
+            "&start=0&max_results=7&sortBy=submittedDate&sortOrder=descending"
+          )
+          with urllib.request.urlopen(url, timeout=30) as r:
+            xml = r.read()
+
+          ns  = {'a': 'http://www.w3.org/2005/Atom'}
+          root = ET.fromstring(xml)
+          entries = root.findall('a:entry', ns)
+
+          today = datetime.utcnow().strftime('%Y-%m-%d')
+          lines = [
+            f"# arXiv Daily Digest — {today}",
+            "",
+            "_Top papers in Machine Learning · AI · NLP · Computer Vision_",
+            "",
+            "---",
+            "",
+          ]
+
+          for i, e in enumerate(entries, 1):
+            title   = e.find('a:title',   ns).text.strip().replace('\n', ' ')
+            summary = e.find('a:summary', ns).text.strip().replace('\n', ' ')
+            link    = e.find('a:id',      ns).text.strip()
+            authors = ', '.join(
+              a.find('a:name', ns).text
+              for a in e.findall('a:author', ns)[:3]
+            )
+            cats = [c.get('term') for c in e.findall('a:category', ns)][:3]
+
+            lines += [
+              f"## {i}. {title}",
+              f"**Authors:** {authors}",
+              f"**Categories:** {', '.join(cats)}",
+              f"**Abstract:** {summary[:400]}{'...' if len(summary) > 400 else ''}",
+              f"**Link:** {link}",
+              "",
+              "---",
+              "",
+            ]
+
+          out_path = f"arxiv-daily/{today}.md"
+          with open(out_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+          print(f"Written {out_path} with {len(entries)} papers")
+          EOF
+
+      - name: Commit digest
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add arxiv-daily/
+          git diff --cached --quiet || git commit -m "Daily arXiv digest: $(date -u +%Y-%m-%d)"
+          git push
